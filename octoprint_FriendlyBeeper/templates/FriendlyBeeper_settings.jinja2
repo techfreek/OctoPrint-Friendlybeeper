@@ -1,0 +1,51 @@
+<h3>Friendly Neighborhood Beeper Settings</h3>
+
+<form class="form-horizontal">
+    <h4>{{ _('Active Hours') }} </h4>
+
+    <div class="control-group">
+        <label class="control-label">
+            {{ _('Start (HH:MM)') }}
+        </label>
+
+        <div class="controls">
+            <div class="input-append">
+                <input type="text" class="input-mini text-left" data-bind="value: settings.plugins.FriendlyBeeper.start_time">
+            </div>
+        </div>
+
+        <label class="control-label">
+            {{ _('Stop (HH:MM)') }}
+        </label>
+
+        <div class="controls">
+            <div class="input-append">
+                <input type="text" class="input-mini text-left" data-bind="value: settings.plugins.FriendlyBeeper.end_time">
+            </div>
+        </div>
+    </div>
+
+    <h4>{{ _('Beep Settings') }} </h4>
+
+    <div class="control-group">
+        <label class="control-label">
+            {{ _('Frequency (Hz)') }}
+        </label>
+
+        <div class="controls">
+            <div class="input-append">
+                <input type="text" class="input-mini text-left" data-bind="value: settings.plugins.FriendlyBeeper.frequency">
+            </div>
+        </div>
+
+        <label class="control-label">
+            {{ _('Duration (Milliseconds)') }}
+        </label>
+
+        <div class="controls">
+            <div class="input-append">
+                <input type="text" class="input-mini text-left" data-bind="value: settings.plugins.FriendlyBeeper.duration">
+            </div>
+        </div>
+    </div>
+</form>

@@ -1,0 +1,3 @@
+include README.md
+recursive-include octoprint_FriendlyBeeper/templates *
+recursive-include octoprint_FriendlyBeeper/translations *
