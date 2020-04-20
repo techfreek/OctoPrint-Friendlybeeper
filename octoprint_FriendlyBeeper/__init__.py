@@ -4,25 +4,23 @@ from datetime import datetime
 
 import octoprint.plugin
 
-class FriendlybeeperPlugin(octoprint.plugin.StartupPlugin,
-                           octoprint.plugin.SettingsPlugin,
+class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
                            octoprint.plugin.TemplatePlugin,
                            octoprint.plugin.EventHandlerPlugin):
 
-    def on_after_startup(self):
-        self._logger.info("FriendlyBeeper: start: {}, end: {}, frequency: {}, duration: {}".format(
-            self._settings.get(["start_time"]),
-            self._settings.get(["end_time"]),
-            self._settings.get(["frequency"]),
-            self._settings.get(["duration"])))
-
     # event handler plugin
     def on_event(self, event, payload):
-        if event not in ['PrintFailed', 'PrintDone']:
-            self._logger.info("FriendlyBeeper ignoring event: {}".format(event))
+        if event not in ['PrintFailed', 'PrintCancelled', 'PrintDone']:
+            if event not in ['ZChange', 'PositionUpdate']:
+                # filter out a few common events for less log spam
+                self._logger.debug("Ignoring event '{}'".format(event))
             return
 
+        self._logger.info("Reacting to event '{}'".format(event))
+
         now = datetime.now()
+        self._logger.info("It's currently '{}'".format(now))
+
         # convert to a time object in 2 steps, first create, then combine with that
         start_point = datetime.strptime(self._settings.get(["start_time"]), "%H:%M")
         end_point = datetime.strptime(self._settings.get(["end_time"]), "%H:%M")
@@ -30,15 +28,22 @@ class FriendlybeeperPlugin(octoprint.plugin.StartupPlugin,
         # now combine with todays date so we can actually compare
         start = datetime.combine(datetime.now(), start_point.time())
         end = datetime.combine(datetime.now(), end_point.time())
+        self._logger.info("Start is '{}'".format(start))
+        self._logger.info("End is '{}'".format(end))
 
         if start <= now <= end:
             command = "M300 S{frequency} P{duration}".format(
-                    frequency=self._settings.get(["frequency"]),
-                    duration=self._settings.get(["duration"]))
+                frequency=self._settings.get(["frequency"]),
+                duration=self._settings.get(["duration"]))
 
             self._logger.info("Sending '{}' to printer", command)
 
             self._printer.commands(command)
+        else:
+            self._logger.info("Would not be friendly to beep now:\nNow: {}\nStart: {}\nEnd: {}".format(
+                now,
+                start,
+                end))
 
     ## SettingsPlugin
     def get_settings_defaults(self):
