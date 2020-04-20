@@ -54,6 +54,12 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
             duration=500
         )
 
+    def on_settings_load(self):
+        data = octoprint.plugin.SettingsPlugin.on_settings_load(self)
+        # inject current time into response so we can see if there is timeskew
+        data['current'] = datetime.now().ctime()
+        return data
+
     def get_template_vars(self):
         return dict(
             start_time=self._settings.get(["start_time"]),
@@ -88,7 +94,6 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
 
 
 __plugin_name__ = "Friendly Neighborhood Beeper"
-
 __plugin_pythoncompat__ = ">=2.7,<4" # python 2 and 3
 
 def __plugin_load__():

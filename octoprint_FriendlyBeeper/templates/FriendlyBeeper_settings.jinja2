@@ -1,6 +1,12 @@
 <h3>Friendly Neighborhood Beeper Settings</h3>
 
 <form class="form-horizontal">
+    <h4>{{ _('Current Time') }} </h4>
+    <input type="text" class="text-left" data-bind="value: settings.plugins.FriendlyBeeper.current" disabled>
+    <label>
+        {{ _('If the above time doesn\'t match reality, you\'ll need to resync your computer\'s clock') }}
+    </label>
+
     <h4>{{ _('Active Hours') }} </h4>
 
     <div class="control-group">
