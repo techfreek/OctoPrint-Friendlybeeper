@@ -68,7 +68,7 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
         # for details.
         return dict(
             FriendlyBeeper=dict(
-                displayName="Friendlybeeper Plugin",
+                displayName="Friendly Neighborhood Beeper",
                 displayVersion=self._plugin_version,
 
                 # version check: github repository
