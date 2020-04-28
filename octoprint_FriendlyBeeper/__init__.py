@@ -1,6 +1,7 @@
 # coding=utf-8
 from __future__ import absolute_import
 from datetime import datetime
+from time import tzname
 
 import octoprint.plugin
 
@@ -10,7 +11,12 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
 
     # event handler plugin
     def on_event(self, event, payload):
-        if event not in ['PrintFailed', 'PrintDone']:
+        notify_events = ['PrintFailed', 'PrintDone']
+
+        if self._settings.get(["notify_on_pause"]):
+            notify_events.append("PrintPaused")
+
+        if event not in notify_events:
             return
 
         now = datetime.now()
@@ -29,6 +35,7 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
                 duration=self._settings.get(["duration"]))
 
             self._printer.commands(command)
+            self._logger.debug("Notified on event {}".format(event))
         else:
             self._logger.info("Would not be friendly to beep now:\nNow: {}\nStart: {}\nEnd: {}".format(
                 now,
@@ -38,6 +45,7 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
     ## SettingsPlugin
     def get_settings_defaults(self):
         return dict(
+            notify_on_pause=False,
             start_time="08:00",
             end_time="22:00",
             frequency=300,
@@ -48,10 +56,12 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
         data = octoprint.plugin.SettingsPlugin.on_settings_load(self)
         # inject current time into response so we can see if there is timeskew
         data['current'] = datetime.now().ctime()
+        data['timezone'] = tzname[0]
         return data
 
     def get_template_vars(self):
         return dict(
+            notify_on_pause=self._settings.get(["notify_on_pause"]),
             start_time=self._settings.get(["start_time"]),
             end_time=self._settings.get(["end_time"]),
             frequency=self._settings.get(["frequency"]),
