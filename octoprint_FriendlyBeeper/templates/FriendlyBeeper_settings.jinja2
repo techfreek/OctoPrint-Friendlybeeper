@@ -2,13 +2,16 @@
 
 <form class="form-horizontal">
     <h4>{{ _('Current Time') }} </h4>
-    <input type="text" class="text-left" data-bind="value: settings.plugins.FriendlyBeeper.current" disabled>
-    <label>
-        {{ _('If the above time doesn\'t match reality, you\'ll need to resync your computer\'s clock') }}
-    </label>
+    <div class="control-group">
+        <input type="text" class="text-left" data-bind="value: settings.plugins.FriendlyBeeper.current" disabled>
+        <input type="text" class="input-mini text-left" data-bind="value: settings.plugins.FriendlyBeeper.timezone" disabled>
+
+        <label>
+            {{ _('If the above time doesn\'t match reality, you\'ll need to resync OctoPrint\'s clock, or set your timezone. On Raspberry Pi based systems, this may mean running raspi-config') }}
+        </label>
+    </div>
 
     <h4>{{ _('Active Hours') }} </h4>
-
     <div class="control-group">
         <label class="control-label">
             {{ _('Start (HH:MM)') }}
@@ -51,6 +54,21 @@
         <div class="controls">
             <div class="input-append">
                 <input type="text" class="input-mini text-left" data-bind="value: settings.plugins.FriendlyBeeper.duration">
+            </div>
+        </div>
+
+        <label class="control-label">
+            {{ _('Notify On Pause') }}
+        </label>
+
+        <div class="control-group">
+            <div class="controls">
+                <label class="checkbox">
+                    <input type="checkbox" data-bind="checked: settings.plugins.FriendlyBeeper.notify_on_pause"> {{ _('When the print is paused, either through OctoPrint or through a <a href="http://docs.octoprint.org/en/master/configuration/config_yaml.html#serial">pausing command</a>, trigger a beep') }}
+                    <div class="help-block">
+                        {{ _('This may need to be configured under the Printer -> Serial Connection -> Firmware & protocol -> Pausing commands')}}
+                    </div>
+                </label>
             </div>
         </div>
     </div>
