@@ -1,6 +1,6 @@
 # coding=utf-8
 from __future__ import absolute_import
-from datetime import datetime
+from datetime import datetime, timedelta
 from time import tzname
 
 import octoprint.plugin
@@ -28,6 +28,12 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
         # now combine with todays date so we can actually compare
         start = datetime.combine(datetime.now(), start_point.time())
         end = datetime.combine(datetime.now(), end_point.time())
+
+        # if the end time is earlier than the start, add one day to the end.
+        # this covers cases where you want to alert between day boundaries.
+        # e.g.: 8am till 1am.
+        if start > end:
+            end = end + timedelta(days=1)
 
         if start <= now <= end:
             command = "M300 S{frequency} P{duration}".format(
