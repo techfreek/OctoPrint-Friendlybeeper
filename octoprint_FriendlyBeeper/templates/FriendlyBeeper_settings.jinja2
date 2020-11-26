@@ -14,22 +14,22 @@
     <h4>{{ _('Active Hours') }} </h4>
     <div class="control-group">
         <label class="control-label">
-            {{ _('Start (HH:MM)') }}
+            {{ _('Start') }}
         </label>
 
         <div class="controls">
             <div class="input-append">
-                <input type="text" class="input-mini text-left" data-bind="value: settings.plugins.FriendlyBeeper.start_time">
+                <input type="time" step="60" class="input-mini text-left" data-bind="value: settings.plugins.FriendlyBeeper.start_time">
             </div>
         </div>
 
         <label class="control-label">
-            {{ _('Stop (HH:MM)') }}
+            {{ _('Stop') }}
         </label>
 
         <div class="controls">
             <div class="input-append">
-                <input type="text" class="input-mini text-left" data-bind="value: settings.plugins.FriendlyBeeper.end_time">
+                <input type="time" step="60" class="input-mini text-left" data-bind="value: settings.plugins.FriendlyBeeper.end_time">
             </div>
         </div>
     </div>
@@ -43,7 +43,7 @@
 
         <div class="controls">
             <div class="input-append">
-                <input type="text" class="input-mini text-left" data-bind="value: settings.plugins.FriendlyBeeper.frequency">
+                <input type="number" step="10" class="input-mini text-left" data-bind="value: settings.plugins.FriendlyBeeper.frequency">
             </div>
         </div>
 
@@ -53,7 +53,7 @@
 
         <div class="controls">
             <div class="input-append">
-                <input type="text" class="input-mini text-left" data-bind="value: settings.plugins.FriendlyBeeper.duration">
+                <input type="number" step="100" class="input-mini text-left" data-bind="value: settings.plugins.FriendlyBeeper.duration">
             </div>
         </div>
 
