@@ -19,8 +19,6 @@ These settings define the hours the printer may bee when the printer completes.
 These default to 8am - 10pm as I won't likely be checking my printer outside those
 hours.
 
-Note: I don't currently support time windows like 10pm - 8am currently.
-
 ### Beep Settings
 If you want to change the tone, or duration of the beep the printer makes, these
 can be changed to modify that.
