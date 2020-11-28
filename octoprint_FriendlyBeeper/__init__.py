@@ -1,5 +1,6 @@
 # coding=utf-8
 from __future__ import absolute_import
+from octoprint.util import RepeatedTimer
 from datetime import datetime, timedelta
 from time import tzname
 
@@ -9,16 +10,7 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
                            octoprint.plugin.TemplatePlugin,
                            octoprint.plugin.EventHandlerPlugin):
 
-    # event handler plugin
-    def on_event(self, event, payload):
-        notify_events = ['PrintFailed', 'PrintDone']
-
-        if self._settings.get(["notify_on_pause"]):
-            notify_events.append("PrintPaused")
-
-        if event not in notify_events:
-            return
-
+    def do_beep(self, event):
         now = datetime.now()
 
         # convert to a time object in 2 steps, first create, then combine with that
@@ -43,10 +35,42 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
             self._printer.commands(command)
             self._logger.debug("Notified on event {}".format(event))
         else:
-            self._logger.info("Would not be friendly to beep now:\nNow: {}\nStart: {}\nEnd: {}".format(
+            self._logger.info("Would not be friendly to beep now:\n" +
+                "Now: {}\nStart: {}\nEnd: {}".format(
                 now,
                 start,
                 end))
+
+    def has_cooled_down(self):
+        if 'bed' not in self._printer.get_current_temperatures():
+            self._logger.info("Couldn't find printbed temperature")
+            return
+
+        temp = self._printer.get_current_temperatures()['bed']['actual']
+        target = int(self._settings.get(["bed_cool_to"]))
+
+        if temp <= target:
+            self._logger.info('Bed finally cooled down')
+            self.do_beep("cool_down")
+            self._timer.cancel()
+        else:
+            self._logger.info('Bed hasn\'t cooled down yet {} > {}',
+                temp, target)
+
+    # event handler plugin
+    def on_event(self, event, payload):
+        notify_events = ['PrintFailed', 'PrintDone']
+
+        if self._settings.get(["notify_on_pause"]):
+            notify_events.append("PrintPaused")
+
+        if event not in notify_events:
+            return
+
+        if wait_for_cooldown:
+            self._timer = RepeatedTimer(30, self.has_cooled_down, run_first=True)
+        else:
+            self.do_beep(event)
 
     ## SettingsPlugin
     def get_settings_defaults(self):
@@ -55,7 +79,9 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
             start_time="08:00",
             end_time="22:00",
             frequency=300,
-            duration=500
+            duration=500,
+            wait_for_cooldown=True,
+            bed_cool_to=30
         )
 
     def on_settings_load(self):
@@ -71,7 +97,9 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
             start_time=self._settings.get(["start_time"]),
             end_time=self._settings.get(["end_time"]),
             frequency=self._settings.get(["frequency"]),
-            duration=self._settings.get(["duration"]))
+            duration=self._settings.get(["duration"]),
+            wait_for_cooldown=self._settings.get(["wait_for_cooldown"]),
+            bed_cool_to=self._settings.get(["bed_cool_to"]))
 
     def get_template_configs(self):
         return [
@@ -79,9 +107,6 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
         ]
 
     def get_update_information(self):
-        # Define the configuration for your plugin to use with the Software Update
-        # Plugin here. See https://docs.octoprint.org/en/master/bundledplugins/softwareupdate.html
-        # for details.
         return dict(
             FriendlyBeeper=dict(
                 displayName="Friendly Neighborhood Beeper",
@@ -97,7 +122,6 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
                 pip="https://github.com/techfreek/OctoPrint-Friendlybeeper/archive/{target_version}.zip"
             )
         )
-
 
 __plugin_name__ = "Friendly Neighborhood Beeper"
 __plugin_pythoncompat__ = ">=2.7,<4" # python 2 and 3

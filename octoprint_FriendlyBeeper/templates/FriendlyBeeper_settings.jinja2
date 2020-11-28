@@ -71,5 +71,30 @@
                 </label>
             </div>
         </div>
+
+        <label class="control-label">
+            {{ _('Wait For Cooldown') }}
+        </label>
+
+        <div class="control-group">
+            <div class="controls">
+                <label class="checkbox">
+                    <input type="checkbox" data-bind="checked: settings.plugins.FriendlyBeeper.wait_for_cooldown"> {{ _('After the print has finished, wait for the bed to cooldown before triggering the beep') }}
+                </label>
+
+            </div>
+        </div>
+
+        <label class="control-label">
+            {{ _('Target Bed Temp') }}
+        </label>
+
+        <div class="control-group">
+            <div class="controls">
+                <label class="input-append">
+                    <input type="number" step="5" class="input-mini text-left" data-bind="value: settings.plugins.FriendlyBeeper.bed_cool_to, enabled: settings.plugins.FriendlyBeeper.wait_for_cooldown"> {{ _('C') }}
+                </label>
+            </div>
+        </div>
     </div>
 </form>
