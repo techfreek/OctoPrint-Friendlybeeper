@@ -1,14 +1,16 @@
 # coding=utf-8
 from __future__ import absolute_import
-from octoprint.util import RepeatedTimer
 from datetime import datetime, timedelta
 from time import tzname
+from octoprint.util import RepeatedTimer
 
 import octoprint.plugin
 
 class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
                            octoprint.plugin.TemplatePlugin,
-                           octoprint.plugin.EventHandlerPlugin):
+                           octoprint.plugin.EventHandlerPlugin,
+                           octoprint.plugin.AssetPlugin,
+                           octoprint.plugin.SimpleApiPlugin):
 
     def do_beep(self, event):
         now = datetime.now()
@@ -33,7 +35,7 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
                 duration=self._settings.get(["duration"]))
 
             self._printer.commands(command)
-            self._logger.debug("Notified on event {}".format(event))
+            self._logger.info("Sent {} on event {}".format(command, event))
         else:
             self._logger.info("Would not be friendly to beep now:\n" +
                 "Now: {}\nStart: {}\nEnd: {}".format(
@@ -54,12 +56,13 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
             self.do_beep("cool_down")
             self._timer.cancel()
         else:
-            self._logger.info('Bed hasn\'t cooled down yet {} > {}',
-                temp, target)
+            self._logger.info('Bed hasn\'t cooled down yet {} > {}'.format(
+                temp, target))
 
     # event handler plugin
-    def on_event(self, event, payload):
+    def on_event(self, event, _):
         notify_events = ['PrintFailed', 'PrintDone']
+        requires_cooldown = True
 
         if self._settings.get(["notify_on_pause"]):
             notify_events.append("PrintPaused")
@@ -67,8 +70,15 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
         if event not in notify_events:
             return
 
+        if event in ['PrintPaused']:
+            requires_cooldown = False
+
         if wait_for_cooldown:
-            self._timer = RepeatedTimer(30, self.has_cooled_down, run_first=True)
+            if requires_cooldown:
+                self._timer = RepeatedTimer(30, self.has_cooled_down, run_first=True)
+            else:
+                # dont delay paused event on cooldown
+                self.do_beep(event)
         else:
             self.do_beep(event)
 
@@ -103,8 +113,25 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
 
     def get_template_configs(self):
         return [
-            dict(type="settings", custom_bindings=False)
+            dict(type="settings", custom_bindings=True)
         ]
+
+    def get_assets(self):
+        return dict(
+            js=["js/FriendlyBeeper.js"]
+        )
+
+    def get_api_commands(self):
+        return dict(
+            beep_test=[],
+        )
+
+    def on_api_command(self, command, data):
+        self._logger.info('API command: {}'.format(command))
+        if command == "beep_test":
+            self.do_beep("beep_test")
+        else:
+            self._logger.info('Unknown API command: {} ({})'.format(command, data))
 
     def get_update_information(self):
         return dict(
