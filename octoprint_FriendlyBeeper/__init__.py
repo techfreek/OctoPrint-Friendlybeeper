@@ -6,7 +6,8 @@ from octoprint.util import RepeatedTimer
 
 import octoprint.plugin
 
-class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
+class FriendlybeeperPlugin(octoprint.plugin.StartupPlugin,
+                           octoprint.plugin.SettingsPlugin,
                            octoprint.plugin.TemplatePlugin,
                            octoprint.plugin.EventHandlerPlugin,
                            octoprint.plugin.AssetPlugin,
@@ -90,6 +91,7 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
             notify_events.append("PrintPaused")
 
         if event not in notify_events:
+            self._logger.info('Ignoring event {}'.format(event))
             return
 
         if event in ['PrintPaused']:
@@ -166,6 +168,9 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
                 self.do_beep("beep_test")
         else:
             self._logger.info('Unknown API command: {} ({})'.format(command, data))
+
+    def on_startup(self, ip, port):
+        self._timer = None
 
     def get_update_information(self):
         return dict(
