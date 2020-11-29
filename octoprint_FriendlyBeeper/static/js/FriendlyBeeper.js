@@ -15,6 +15,8 @@ $(function() {
         self.wait_for_cooldown = ko.observable();
         self.bed_cool_to = ko.observable();
         self.beep_test_result = ko.observable(null);
+        self.custom_tone = ko.observable();
+        self.use_custom_tone = ko.observable();
 
         self.onBeforeBinding = function () {
             self.settings = self.settingsViewModel.settings.plugins.FriendlyBeeper;
@@ -27,15 +29,23 @@ $(function() {
             self.notify_on_pause = self.settingsViewModel.settings.plugins.FriendlyBeeper.notify_on_pause;
             self.wait_for_cooldown = self.settingsViewModel.settings.plugins.FriendlyBeeper.wait_for_cooldown;
             self.bed_cool_to = self.settingsViewModel.settings.plugins.FriendlyBeeper.bed_cool_to;
+            self.custom_tone = self.settingsViewModel.settings.plugins.FriendlyBeeper.custom_tone;
+            self.use_custom_tone = self.settingsViewModel.settings.plugins.FriendlyBeeper.use_custom_tone;
         };
 
         self.beep_test = function() {
             OctoPrint.simpleApiCommand(PLUGIN_ID, "beep_test")
                 .done(function(response) {
                     self.beep_test_result('Complete!');
+                    window.setTimeout(function() {
+                        self.beep_test_result(null);
+                    }, 3 * 1000)
                 })
                 .fail(function(response) {
                     self.beep_test_result('Error ' + response.status + ': ' + response.statusText);
+                    window.setTimeout(function() {
+                        self.beep_test_result(null);
+                    }, 3 * 1000)
                 })
         }
     }

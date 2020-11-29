@@ -34,7 +34,10 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
                 frequency=self._settings.get(["frequency"]),
                 duration=self._settings.get(["duration"]))
 
-            self._printer.commands(command)
+            if self._settings.get(["use_custom_tone"]):
+                command = self._settings.get(["custom_tone"])
+
+            self._printer.commands(command.splitlines())
             self._logger.info("Sent {} on event {}".format(command, event))
         else:
             self._logger.info("Would not be friendly to beep now:\n" +
@@ -73,7 +76,7 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
         if event in ['PrintPaused']:
             requires_cooldown = False
 
-        if wait_for_cooldown:
+        if self._settings.get(["wait_for_cooldown"]):
             if requires_cooldown:
                 self._timer = RepeatedTimer(30, self.has_cooled_down, run_first=True)
             else:
@@ -91,7 +94,9 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
             frequency=300,
             duration=500,
             wait_for_cooldown=True,
-            bed_cool_to=30
+            bed_cool_to=30,
+            custom_tone=None,
+            use_custom_tone=False
         )
 
     def on_settings_load(self):
@@ -109,7 +114,9 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
             frequency=self._settings.get(["frequency"]),
             duration=self._settings.get(["duration"]),
             wait_for_cooldown=self._settings.get(["wait_for_cooldown"]),
-            bed_cool_to=self._settings.get(["bed_cool_to"]))
+            bed_cool_to=self._settings.get(["bed_cool_to"]),
+            custom_tone=self._settings.get(["custom_tone"]),
+            use_custom_tone=self._settings.get(["use_custom_tone"]))
 
     def get_template_configs(self):
         return [
@@ -129,7 +136,11 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
     def on_api_command(self, command, data):
         self._logger.info('API command: {}'.format(command))
         if command == "beep_test":
-            self.do_beep("beep_test")
+            if self._settings.get(["wait_for_cooldown"]):
+                if self.has_cooled_down():
+                    self.do_beep("beep_test")
+            else:
+                self.do_beep("beep_test")
         else:
             self._logger.info('Unknown API command: {} ({})'.format(command, data))
 

@@ -7,7 +7,7 @@
         <input type="text" class="input-mini text-left" data-bind="value: timezone" disabled>
 
         <label>
-            {{ _('If the above time doesn\'t match reality, you\'ll need to resync OctoPrint\'s clock, or set your timezone. On Raspberry Pi based systems, this may mean running raspi-config') }}
+            {{ _('If the above time doesn\'t match reality, you\'ll need to resync OctoPrint\'s clock, or set your timezone. On Raspberry Pi based systems, this may mean running <code>raspi-config</code>') }}
         </label>
     </div>
 
@@ -37,24 +37,41 @@
     <h4>{{ _('Beep Settings') }} </h4>
 
     <div class="control-group">
-        <label class="control-label">
+        <label class="control-label" data-bind="hidden: use_custom_tone">
             {{ _('Frequency (Hz)') }}
         </label>
 
-        <div class="controls">
+        <div class="controls" data-bind="hidden: use_custom_tone">
             <div class="input-append">
                 <input type="number" step="10" class="input-mini text-left" data-bind="value: frequency">
             </div>
         </div>
 
-        <label class="control-label">
+        <label class="control-label" data-bind="hidden: use_custom_tone">
             {{ _('Duration (Milliseconds)') }}
         </label>
 
-        <div class="controls">
+        <div class="controls" data-bind="hidden: use_custom_tone">
             <div class="input-append">
                 <input type="number" step="100" class="input-mini text-left" data-bind="value: duration">
             </div>
+        </div>
+
+        <label class="control-label">
+            {{ _('Use Custom GCode Tone') }}
+        </label>
+
+        <div class="control-group">
+            <div class="controls">
+                <label class="checkbox">
+                    <input type="checkbox" data-bind="checked: use_custom_tone"> Use custom tone
+                </label>
+            </div>
+        </div>
+
+        <div class="control-group" data-bind="visible: use_custom_tone">
+            <label for=""> {{ _ ('GCode Commands for Custom Tone') }}</label>
+            <textarea class="input-block-level" rows="6" data-bind="value: custom_tone"></textarea>
         </div>
 
         <label class="control-label">
@@ -101,6 +118,6 @@
     <div class="control-group">
         <button class="btn btn-primary" data-bind="click: beep_test">{{ _('Test') }} </button>
         <span data-bind="text: beep_test_result"></span>
-        <div class="help-block">{{ _('This will test the beep and obey the above active hours. It won\'t check bed temperature')}}</div>
+        <div class="help-block">{{ _('This will test current settings for the beep (including active hours). If <i>Wait For Cooldown</i> is enabled, it will check the bed temperature, but it won\'t wait for it to cooldown.')}}</div>
     </div>
 </form>
