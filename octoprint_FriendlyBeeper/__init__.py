@@ -72,13 +72,16 @@ class FriendlybeeperPlugin(octoprint.plugin.StartupPlugin,
         return False
 
     def has_cooled_down_timer(self):
+        self._logger.info('Checking if bed has cooled down')
         if self.has_cooled_down():
             self.do_beep("cool_down")
             self._timer.cancel()
             self._logger.info('Cancelling timer')
+        else:
+            self._logger.info('Still waiting for cooldown')
 
     # event handler plugin
-    def on_event(self, event, _):
+    def on_event(self, event, data):
         notify_events = ['PrintFailed', 'PrintDone']
         requires_cooldown = True
 
@@ -90,8 +93,10 @@ class FriendlybeeperPlugin(octoprint.plugin.StartupPlugin,
         if self._settings.get(["notify_on_pause"]):
             notify_events.append("PrintPaused")
 
+        if event not in ['ZChange', 'PositionUpdate']:
+            self._logger.info('Event {}: {}'.format(event, data))
+
         if event not in notify_events:
-            self._logger.info('Ignoring event {}'.format(event))
             return
 
         if event in ['PrintPaused']:
@@ -100,7 +105,9 @@ class FriendlybeeperPlugin(octoprint.plugin.StartupPlugin,
         if requires_cooldown:
             self._logger.info('Waiting for bed to cooldown')
             self._timer = RepeatedTimer(30, self.has_cooled_down_timer, run_first=True)
+            self._timer.start()
         else:
+            self._logger.info('Bypassing cooldown')
             self.do_beep(event)
 
     ## SettingsPlugin
