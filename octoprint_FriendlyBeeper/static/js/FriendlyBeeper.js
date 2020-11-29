@@ -16,7 +16,7 @@ $(function() {
         self.bed_cool_to = ko.observable();
         self.beep_test_result = ko.observable(null);
         self.custom_tone = ko.observable();
-        self.use_custom_tone = ko.observable();
+        self.beep_method = ko.observable();
 
         self.onBeforeBinding = function () {
             self.settings = self.settingsViewModel.settings.plugins.FriendlyBeeper;
@@ -30,7 +30,7 @@ $(function() {
             self.wait_for_cooldown = self.settingsViewModel.settings.plugins.FriendlyBeeper.wait_for_cooldown;
             self.bed_cool_to = self.settingsViewModel.settings.plugins.FriendlyBeeper.bed_cool_to;
             self.custom_tone = self.settingsViewModel.settings.plugins.FriendlyBeeper.custom_tone;
-            self.use_custom_tone = self.settingsViewModel.settings.plugins.FriendlyBeeper.use_custom_tone;
+            self.beep_method = self.settingsViewModel.settings.plugins.FriendlyBeeper.beep_method;
         };
 
         self.beep_test = function() {

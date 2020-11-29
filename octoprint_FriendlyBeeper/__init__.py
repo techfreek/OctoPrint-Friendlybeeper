@@ -31,12 +31,17 @@ class FriendlybeeperPlugin(octoprint.plugin.StartupPlugin,
             end = end + timedelta(days=1)
 
         if start <= now <= end:
-            command = "M300 S{frequency} P{duration}".format(
-                frequency=self._settings.get(["frequency"]),
-                duration=self._settings.get(["duration"]))
+            command = ""
+            method = self._settings.get(["beep_method"])
 
-            if self._settings.get(["use_custom_tone"]):
+            if method == "single":
+                command = "M300 S{frequency} P{duration}".format(
+                    frequency=self._settings.get(["frequency"]),
+                    duration=self._settings.get(["duration"]))
+            elif method == "custom":
                 command = self._settings.get(["custom_tone"])
+            else:
+                self._logger.info('Unknown beep_method {}'.format(method))
 
             self._printer.commands(command.splitlines())
             self._logger.info("Sent {} on event {}".format(command, event))
@@ -49,12 +54,13 @@ class FriendlybeeperPlugin(octoprint.plugin.StartupPlugin,
 
     def has_cooled_down(self):
         temps = self._printer.get_current_temperatures()
-        self._logger.info('Printer temps: {}'.format(temps))
 
         if not self._settings.get(["wait_for_cooldown"]):
             # skip check if we dont care about waiting for cooldown
-            self._logger.info('Skipping wait for cooldown check')
             return True
+
+        # I probably could add a printer state check in here for paused/etc
+        # to simplify calling code
 
         if 'bed' not in self._printer.get_current_temperatures():
             self._logger.info("Couldn't find printbed temperature")
@@ -64,21 +70,14 @@ class FriendlybeeperPlugin(octoprint.plugin.StartupPlugin,
         target = int(self._settings.get(["bed_cool_to"]))
 
         if temp <= target:
-            self._logger.info('Bed has cooled down')
             return True
 
-        self._logger.info('Bed hasn\'t cooled down yet {} > {}'.format(
-            temp, target))
         return False
 
     def has_cooled_down_timer(self):
-        self._logger.info('Checking if bed has cooled down')
         if self.has_cooled_down():
             self.do_beep("cool_down")
             self._timer.cancel()
-            self._logger.info('Cancelling timer')
-        else:
-            self._logger.info('Still waiting for cooldown')
 
     # event handler plugin
     def on_event(self, event, data):
@@ -86,15 +85,11 @@ class FriendlybeeperPlugin(octoprint.plugin.StartupPlugin,
         requires_cooldown = True
 
         if event in ['PrintStarted']:
-            self._logger.info('Ensuring timer is cancelled, new print starting')
             if self._timer:
                 self._timer.cancel()
 
         if self._settings.get(["notify_on_pause"]):
             notify_events.append("PrintPaused")
-
-        if event not in ['ZChange', 'PositionUpdate']:
-            self._logger.info('Event {}: {}'.format(event, data))
 
         if event not in notify_events:
             return
@@ -121,18 +116,8 @@ class FriendlybeeperPlugin(octoprint.plugin.StartupPlugin,
             wait_for_cooldown=True,
             bed_cool_to=30,
             custom_tone=None,
-            use_custom_tone=False
+            beep_method="single"
         )
-
-    """
-
-
-    New idea for controlling beep mode. Instead of "use_custom_tone", have like an
-    enum, or something to chose which system to use.
-    single_tone
-    custom_tone
-    ui_tone (ie play sound effect from link in the ui?)
-    """
 
     def on_settings_load(self):
         data = octoprint.plugin.SettingsPlugin.on_settings_load(self)
@@ -151,7 +136,7 @@ class FriendlybeeperPlugin(octoprint.plugin.StartupPlugin,
             wait_for_cooldown=self._settings.get(["wait_for_cooldown"]),
             bed_cool_to=self._settings.get(["bed_cool_to"]),
             custom_tone=self._settings.get(["custom_tone"]),
-            use_custom_tone=self._settings.get(["use_custom_tone"]))
+            beep_method=self._settings.get(["beep_method"]))
 
     def get_template_configs(self):
         return [
