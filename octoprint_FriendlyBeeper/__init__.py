@@ -47,13 +47,17 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
                 end))
 
     def has_cooled_down(self):
-        if 'bed' not in self._printer.get_current_temperatures():
-            self._logger.info("Couldn't find printbed temperature")
-            return False
+        temps = self._printer.get_current_temperatures()
+        self._logger.info('Printer temps: {}'.format(temps))
 
         if not self._settings.get(["wait_for_cooldown"]):
             # skip check if we dont care about waiting for cooldown
+            self._logger.info('Skipping wait for cooldown check')
             return True
+
+        if 'bed' not in self._printer.get_current_temperatures():
+            self._logger.info("Couldn't find printbed temperature")
+            return False
 
         temp = self._printer.get_current_temperatures()['bed']['actual']
         target = int(self._settings.get(["bed_cool_to"]))
@@ -70,11 +74,17 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
         if self.has_cooled_down():
             self.do_beep("cool_down")
             self._timer.cancel()
+            self._logger.info('Cancelling timer')
 
     # event handler plugin
     def on_event(self, event, _):
         notify_events = ['PrintFailed', 'PrintDone']
         requires_cooldown = True
+
+        if event in ['PrintStarted']:
+            self._logger.info('Ensuring timer is cancelled, new print starting')
+            if self._timer:
+                self._timer.cancel()
 
         if self._settings.get(["notify_on_pause"]):
             notify_events.append("PrintPaused")
@@ -86,6 +96,7 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
             requires_cooldown = False
 
         if requires_cooldown:
+            self._logger.info('Waiting for bed to cooldown')
             self._timer = RepeatedTimer(30, self.has_cooled_down_timer, run_first=True)
         else:
             self.do_beep(event)
@@ -103,6 +114,16 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
             custom_tone=None,
             use_custom_tone=False
         )
+
+    """
+
+
+    New idea for controlling beep mode. Instead of "use_custom_tone", have like an
+    enum, or something to chose which system to use.
+    single_tone
+    custom_tone
+    ui_tone (ie play sound effect from link in the ui?)
+    """
 
     def on_settings_load(self):
         data = octoprint.plugin.SettingsPlugin.on_settings_load(self)
