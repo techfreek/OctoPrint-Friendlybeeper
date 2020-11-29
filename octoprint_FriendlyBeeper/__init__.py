@@ -87,8 +87,6 @@ class FriendlybeeperPlugin(octoprint.plugin.StartupPlugin,
         if event in ['ZChange', 'PositionUpdate']:
             return
 
-        self._logger.info('Event: {}'.format(event))
-
         if event in ['PrintStarted']:
             if self._timer:
                 self._timer.cancel()
@@ -97,7 +95,6 @@ class FriendlybeeperPlugin(octoprint.plugin.StartupPlugin,
             notify_events.append("PrintPaused")
 
         if event not in notify_events:
-            self._logger.info('Skipping event: {}'.format(event))
             return
 
         if event in ['PrintPaused']:
