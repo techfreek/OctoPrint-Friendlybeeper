@@ -1,24 +1,19 @@
 # coding=utf-8
 from __future__ import absolute_import
-from datetime import datetime
+from datetime import datetime, timedelta
 from time import tzname
+from octoprint.util import RepeatedTimer
 
 import octoprint.plugin
 
-class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
+class FriendlybeeperPlugin(octoprint.plugin.StartupPlugin,
+                           octoprint.plugin.SettingsPlugin,
                            octoprint.plugin.TemplatePlugin,
-                           octoprint.plugin.EventHandlerPlugin):
+                           octoprint.plugin.EventHandlerPlugin,
+                           octoprint.plugin.AssetPlugin,
+                           octoprint.plugin.SimpleApiPlugin):
 
-    # event handler plugin
-    def on_event(self, event, payload):
-        notify_events = ['PrintFailed', 'PrintDone']
-
-        if self._settings.get(["notify_on_pause"]):
-            notify_events.append("PrintPaused")
-
-        if event not in notify_events:
-            return
-
+    def do_beep(self, event):
         now = datetime.now()
 
         # convert to a time object in 2 steps, first create, then combine with that
@@ -29,18 +24,89 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
         start = datetime.combine(datetime.now(), start_point.time())
         end = datetime.combine(datetime.now(), end_point.time())
 
-        if start <= now <= end:
-            command = "M300 S{frequency} P{duration}".format(
-                frequency=self._settings.get(["frequency"]),
-                duration=self._settings.get(["duration"]))
+        # if the end time is earlier than the start, add one day to the end.
+        # this covers cases where you want to alert between day boundaries.
+        # e.g.: 8am till 1am.
+        if start > end:
+            end = end + timedelta(days=1)
 
-            self._printer.commands(command)
-            self._logger.debug("Notified on event {}".format(event))
+        if start <= now <= end:
+            command = ""
+            method = self._settings.get(["beep_method"])
+
+            if method == "single":
+                command = "M300 S{frequency} P{duration}".format(
+                    frequency=self._settings.get(["frequency"]),
+                    duration=self._settings.get(["duration"]))
+            elif method == "custom":
+                command = self._settings.get(["custom_tone"])
+            else:
+                self._logger.info('Unknown beep_method {}'.format(method))
+
+            self._printer.commands(command.splitlines())
+            self._logger.info("Sent {} on event {}".format(command, event))
         else:
-            self._logger.info("Would not be friendly to beep now:\nNow: {}\nStart: {}\nEnd: {}".format(
+            self._logger.info("Would not be friendly to beep now:\n" +
+                "Now: {}\nStart: {}\nEnd: {}".format(
                 now,
                 start,
                 end))
+
+    def has_cooled_down(self):
+        temps = self._printer.get_current_temperatures()
+
+        if not self._settings.get(["wait_for_cooldown"]):
+            # skip check if we dont care about waiting for cooldown
+            return True
+
+        # I probably could add a printer state check in here for paused/etc
+        # to simplify calling code
+
+        if 'bed' not in self._printer.get_current_temperatures():
+            self._logger.info("Couldn't find printbed temperature")
+            return False
+
+        temp = self._printer.get_current_temperatures()['bed']['actual']
+        target = int(self._settings.get(["bed_cool_to"]))
+
+        if temp <= target:
+            return True
+
+        return False
+
+    def has_cooled_down_timer(self):
+        if self.has_cooled_down():
+            self.do_beep("cool_down")
+            self._timer.cancel()
+
+    # event handler plugin
+    def on_event(self, event, data):
+        notify_events = ['PrintFailed', 'PrintDone']
+        requires_cooldown = True
+
+        if event in ['ZChange', 'PositionUpdate']:
+            return
+
+        if event in ['PrintStarted']:
+            if self._timer:
+                self._timer.cancel()
+
+        if self._settings.get(["notify_on_pause"]):
+            notify_events.append("PrintPaused")
+
+        if event not in notify_events:
+            return
+
+        if event in ['PrintPaused']:
+            requires_cooldown = False
+
+        if requires_cooldown:
+            self._logger.info('Waiting for bed to cooldown')
+            self._timer = RepeatedTimer(30, self.has_cooled_down_timer, run_first=True)
+            self._timer.start()
+        else:
+            self._logger.info('Bypassing cooldown')
+            self.do_beep(event)
 
     ## SettingsPlugin
     def get_settings_defaults(self):
@@ -49,7 +115,11 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
             start_time="08:00",
             end_time="22:00",
             frequency=300,
-            duration=500
+            duration=500,
+            wait_for_cooldown=True,
+            bed_cool_to=30,
+            custom_tone=None,
+            beep_method="single"
         )
 
     def on_settings_load(self):
@@ -65,17 +135,39 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
             start_time=self._settings.get(["start_time"]),
             end_time=self._settings.get(["end_time"]),
             frequency=self._settings.get(["frequency"]),
-            duration=self._settings.get(["duration"]))
+            duration=self._settings.get(["duration"]),
+            wait_for_cooldown=self._settings.get(["wait_for_cooldown"]),
+            bed_cool_to=self._settings.get(["bed_cool_to"]),
+            custom_tone=self._settings.get(["custom_tone"]),
+            beep_method=self._settings.get(["beep_method"]))
 
     def get_template_configs(self):
         return [
-            dict(type="settings", custom_bindings=False)
+            dict(type="settings", custom_bindings=True)
         ]
 
+    def get_assets(self):
+        return dict(
+            js=["js/FriendlyBeeper.js"]
+        )
+
+    def get_api_commands(self):
+        return dict(
+            beep_test=[],
+        )
+
+    def on_api_command(self, command, data):
+        self._logger.info('API command: {}'.format(command))
+        if command == "beep_test":
+            if self.has_cooled_down():
+                self.do_beep("beep_test")
+        else:
+            self._logger.info('Unknown API command: {} ({})'.format(command, data))
+
+    def on_startup(self, ip, port):
+        self._timer = None
+
     def get_update_information(self):
-        # Define the configuration for your plugin to use with the Software Update
-        # Plugin here. See https://docs.octoprint.org/en/master/bundledplugins/softwareupdate.html
-        # for details.
         return dict(
             FriendlyBeeper=dict(
                 displayName="Friendly Neighborhood Beeper",
@@ -91,7 +183,6 @@ class FriendlybeeperPlugin(octoprint.plugin.SettingsPlugin,
                 pip="https://github.com/techfreek/OctoPrint-Friendlybeeper/archive/{target_version}.zip"
             )
         )
-
 
 __plugin_name__ = "Friendly Neighborhood Beeper"
 __plugin_pythoncompat__ = ">=2.7,<4" # python 2 and 3
