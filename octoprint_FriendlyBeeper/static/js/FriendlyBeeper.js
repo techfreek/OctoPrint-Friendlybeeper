@@ -34,7 +34,14 @@ $(function() {
         };
 
         self.beep_test = function() {
-            OctoPrint.simpleApiCommand(PLUGIN_ID, "beep_test")
+            OctoPrint.simpleApiCommand(PLUGIN_ID, "beep_test", {
+                beep_method: self.beep_method(),
+                custom_tone: self.custom_tone(),
+                duration: self.duration(),
+                end_time: self.end_time(),
+                frequency: self.frequency(),
+                start_time: self.start_time()
+            })
                 .done(function(response) {
                     self.beep_test_result('Complete!');
                     window.setTimeout(function() {

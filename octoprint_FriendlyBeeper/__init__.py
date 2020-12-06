@@ -13,12 +13,15 @@ class FriendlybeeperPlugin(octoprint.plugin.StartupPlugin,
                            octoprint.plugin.AssetPlugin,
                            octoprint.plugin.SimpleApiPlugin):
 
-    def do_beep(self, event):
+    def do_beep(self, event, settings = None):
         now = datetime.now()
 
+        if settings == None:
+            settings = self._settings.get_all_data();
+
         # convert to a time object in 2 steps, first create, then combine with that
-        start_point = datetime.strptime(self._settings.get(["start_time"]), "%H:%M")
-        end_point = datetime.strptime(self._settings.get(["end_time"]), "%H:%M")
+        start_point = datetime.strptime(settings["start_time"], "%H:%M")
+        end_point = datetime.strptime(settings["end_time"], "%H:%M")
 
         # now combine with todays date so we can actually compare
         start = datetime.combine(datetime.now(), start_point.time())
@@ -32,14 +35,14 @@ class FriendlybeeperPlugin(octoprint.plugin.StartupPlugin,
 
         if start <= now <= end:
             command = ""
-            method = self._settings.get(["beep_method"])
+            method = settings["beep_method"]
 
             if method == "single":
                 command = "M300 S{frequency} P{duration}".format(
-                    frequency=self._settings.get(["frequency"]),
-                    duration=self._settings.get(["duration"]))
+                    frequency=settings["frequency"],
+                    duration=settings["duration"])
             elif method == "custom":
-                command = self._settings.get(["custom_tone"])
+                command = settings["custom_tone"]
             else:
                 self._logger.info('Unknown beep_method {}'.format(method))
 
@@ -153,14 +156,21 @@ class FriendlybeeperPlugin(octoprint.plugin.StartupPlugin,
 
     def get_api_commands(self):
         return dict(
-            beep_test=[],
+            beep_test=[
+                'beep_method',
+                'custom_tone',
+                'duration',
+                'end_time',
+                'frequency',
+                'start_time',
+                ],
         )
 
     def on_api_command(self, command, data):
         self._logger.info('API command: {}'.format(command))
         if command == "beep_test":
             if self.has_cooled_down():
-                self.do_beep("beep_test")
+                self.do_beep("beep_test", data)
         else:
             self._logger.info('Unknown API command: {} ({})'.format(command, data))
 
