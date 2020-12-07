@@ -156,14 +156,7 @@ class FriendlybeeperPlugin(octoprint.plugin.StartupPlugin,
 
     def get_api_commands(self):
         return dict(
-            beep_test=[
-                'beep_method',
-                'custom_tone',
-                'duration',
-                'end_time',
-                'frequency',
-                'start_time',
-                ],
+            beep_test=self.get_settings_defaults.keys(),
         )
 
     def on_api_command(self, command, data):
