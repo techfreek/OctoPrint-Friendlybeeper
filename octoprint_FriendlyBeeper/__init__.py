@@ -13,11 +13,11 @@ class FriendlybeeperPlugin(octoprint.plugin.StartupPlugin,
                            octoprint.plugin.AssetPlugin,
                            octoprint.plugin.SimpleApiPlugin):
 
-    def do_beep(self, event, settings = None):
+    def do_beep(self, event, patch_settings = {}):
         now = datetime.now()
 
-        if settings == None:
-            settings = self._settings.get_all_data();
+        settings = self._settings.get_all_data().copy();
+        settings.update(patch_settings)
 
         # convert to a time object in 2 steps, first create, then combine with that
         start_point = datetime.strptime(settings["start_time"], "%H:%M")
@@ -156,7 +156,7 @@ class FriendlybeeperPlugin(octoprint.plugin.StartupPlugin,
 
     def get_api_commands(self):
         return dict(
-            beep_test=self.get_settings_defaults.keys(),
+            beep_test=[],
         )
 
     def on_api_command(self, command, data):
