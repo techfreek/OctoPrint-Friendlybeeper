@@ -64,7 +64,7 @@
 
         <div class="controls" data-bind="if: beep_method() === 'single'">
             <div class="input-append">
-                <input type="number" min="1" step="100" class="input-mini text-left" data-bind="value: duration">
+                <input type="number" min="1" max="3500" step="100" class="input-mini text-left" data-bind="value: duration">
             </div>
         </div>
 
@@ -75,6 +75,7 @@
         <div class="controls">
             <div class="control-group" data-bind="if: beep_method() === 'custom'">
                 <textarea class="input-block-level" rows="6" data-bind="value: custom_tone"></textarea>
+                <div class="help-block">{{ _('Note: Some printer firmwares have difficulty producing a beep lasting more than 4 seconds. Please test your settings before you start a print.')}}</div>
             </div>
         </div>
     </div>
@@ -129,7 +130,7 @@
             <div class="controls">
                 <button class="btn btn-primary" data-bind="click: beep_test">{{ _('Trigger Beep') }} </button>
                 <span data-bind="text: beep_test_result"></span>
-                <div class="help-block">{{ _('This will test current settings for the beep (including active hours). If <i>Wait For Cooldown</i> is enabled, it will check the bed temperature, but it won\'t wait for it to cooldown.')}}</div>
+                <div class="help-block">{{ _('This will manually trigger the beep while obeying active hours. If <i>Wait For Cooldown</i> is enabled, and the bed is too hot, it won\'t wait for cooldown')}}</div>
             </div>
         </div>
     </div>
