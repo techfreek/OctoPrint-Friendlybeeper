@@ -117,7 +117,7 @@
         <div class="control-group" data-bind="if: wait_for_cooldown">
             <div class="controls">
                 <label class="input-append">
-                    <input type="number" step="5" class="input-mini text-left" data-bind="value: bed_cool_to, enable: wait_for_cooldown"> {{ _('C') }}
+                    <input type="number" min="10" max="100" step="5" class="input-mini text-left" data-bind="value: bed_cool_to, enable: wait_for_cooldown"> {{ _('C') }}
                 </label>
             </div>
         </div>
@@ -130,7 +130,7 @@
             <div class="controls">
                 <button class="btn btn-primary" data-bind="click: beep_test">{{ _('Trigger Beep') }} </button>
                 <span data-bind="text: beep_test_result"></span>
-                <div class="help-block">{{ _('This will manually trigger the beep while obeying active hours. If <i>Wait For Cooldown</i> is enabled, and the bed is too hot, it won\'t wait for cooldown')}}</div>
+                <div class="help-block">{{ _('This will manually trigger the beep while obeying active hours. If <i>Wait For Cooldown</i> is enabled, and the bed is too hot, it won\'t wait for cooldown.')}}</div>
             </div>
         </div>
     </div>
