@@ -34,7 +34,8 @@ $(function() {
         };
 
         self.beep_test = function() {
-            OctoPrint.simpleApiCommand(PLUGIN_ID, "beep_test")
+            var data = self.settingsViewModel.getLocalData().plugins.FriendlyBeeper;
+            OctoPrint.simpleApiCommand(PLUGIN_ID, "beep_test", data)
                 .done(function(response) {
                     self.beep_test_result('Complete!');
                     window.setTimeout(function() {
