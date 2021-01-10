@@ -130,18 +130,19 @@ class FriendlybeeperPlugin(octoprint.plugin.StartupPlugin,
         # inject current time into response so we can see if there is timeskew
         data['current'] = datetime.now().ctime()
         data['timezone'] = tzname[0]
-        return data
-
-    def get_template_vars(self):
         # belowing we are maxing duration to 3.5 seconds to avoid printer resets
         # due to long beeps. I'm casting back to string at the end to keep the
         # original schema
+        data['duration'] = str(max(int(data['duration']), 3500))
+        return data
+
+    def get_template_vars(self):
         return dict(
             notify_on_pause=self._settings.get(["notify_on_pause"]),
             start_time=self._settings.get(["start_time"]),
             end_time=self._settings.get(["end_time"]),
             frequency=self._settings.get(["frequency"]),
-            duration=str(max(int(self._settings.get(["duration"])), 3500)),
+            duration=self._settings.get(["duration"]),
             wait_for_cooldown=self._settings.get(["wait_for_cooldown"]),
             bed_cool_to=self._settings.get(["bed_cool_to"]),
             custom_tone=self._settings.get(["custom_tone"]),
