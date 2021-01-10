@@ -133,7 +133,7 @@ class FriendlybeeperPlugin(octoprint.plugin.StartupPlugin,
         # belowing we are maxing duration to 3.5 seconds to avoid printer resets
         # due to long beeps. I'm casting back to string at the end to keep the
         # original schema
-        data['duration'] = str(max(int(data['duration']), 3500))
+        data['duration'] = str(min(int(data['duration']), 3500))
         return data
 
     def get_template_vars(self):
