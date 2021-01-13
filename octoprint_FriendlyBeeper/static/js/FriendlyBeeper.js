@@ -33,6 +33,26 @@ $(function() {
             self.beep_method = self.settingsViewModel.settings.plugins.FriendlyBeeper.beep_method;
         };
 
+        self.onDataUpdaterPluginMessage = function (plugin, data) {
+            if (plugin != PLUGIN_ID) {
+                return;
+            }
+
+            switch(data.action)
+            {
+                case "errorPopUp":
+                    new PNotify({
+                        title: PLUGIN_ID + ' error: ' + data.title,
+                        text: data.message,
+                        type: "error",
+                        hide: false
+                    });
+                    break;
+                default:
+                    break;
+            }
+        }
+
         self.beep_test = function() {
             var data = self.settingsViewModel.getLocalData().plugins.FriendlyBeeper;
             OctoPrint.simpleApiCommand(PLUGIN_ID, "beep_test", data)

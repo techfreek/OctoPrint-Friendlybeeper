@@ -6,6 +6,13 @@ from octoprint.util import RepeatedTimer
 
 import octoprint.plugin
 
+BEEP_TIME_MAX = 3500
+BEEP_TIME_MIN = 100
+BEEP_FREQ_MAX = 3000
+BEEP_FREQ_MIN = 10
+BED_TEMP_MIN = 10
+BED_TEMP_MAX = 100
+
 class FriendlybeeperPlugin(octoprint.plugin.StartupPlugin,
                            octoprint.plugin.SettingsPlugin,
                            octoprint.plugin.TemplatePlugin,
@@ -125,11 +132,88 @@ class FriendlybeeperPlugin(octoprint.plugin.StartupPlugin,
             beep_method="single"
         )
 
+    def verify_settings(self, data):
+        """
+        Currently, we only correct and warn about invalid settings, not prevent
+        """
+        valid = True
+
+        if 'duration' in data:
+            if int(data['duration']) > BEEP_TIME_MAX:
+                self._plugin_manager.send_plugin_message(self._identifier,
+                    dict(action="errorPopUp",
+                         title="Invalid duration value",
+                         message="Beep duration set to {}ms which exceeds max value of {}ms. Changing to {}ms".format(
+                                data['duration'], BEEP_TIME_MAX, BEEP_TIME_MAX)
+                        ))
+                data['duration'] = str(BEEP_TIME_MAX)
+                valid = False
+            elif int(data['duration']) < BEEP_TIME_MIN:
+                self._plugin_manager.send_plugin_message(self._identifier,
+                    dict(action="errorPopUp",
+                         title="Invalid duration value",
+                         message="Beep duration set to {}ms which is too short on many printers. Changing to {}ms".format(
+                                data['duration'], BEEP_TIME_MIN)
+                        ))
+                data['duration'] = str(BEEP_TIME_MIN)
+                valid = False
+
+        if 'frequency' in data:
+            if int(data['frequency']) > BEEP_FREQ_MAX:
+                self._plugin_manager.send_plugin_message(self._identifier,
+                    dict(action="errorPopUp",
+                         title="Invalid frequency value",
+                         message="Beep frequency set to {} which is too high for some printers. Changing to {}".format(
+                                data['frequency'], BEEP_FREQ_MAX)
+                        ))
+                data['frequency'] = str(BEEP_FREQ_MAX)
+                valid = False
+            elif int(data['frequency']) < BEEP_FREQ_MIN:
+                self._plugin_manager.send_plugin_message(self._identifier,
+                    dict(action="errorPopUp",
+                         title="Invalid frequency value",
+                         message="Beep frequency set to {} which is too low on some printers. Changing to {}".format(
+                                data['frequency'], BEEP_FREQ_MIN)
+                        ))
+                data['frequency'] = str(BEEP_FREQ_MIN)
+                valid = False
+
+        if 'bed_cool_to' in data:
+            if int(data['bed_cool_to']) > BED_TEMP_MAX:
+                self._plugin_manager.send_plugin_message(self._identifier,
+                    dict(action="errorPopUp",
+                         title="Invalid bed temp value",
+                         message="Bed temperature set to {} which is too high. Changing to {}".format(
+                                data['bed_cool_to'], BED_TEMP_MAX)
+                        ))
+                data['bed_cool_to'] = str(BED_TEMP_MAX)
+                valid = False
+            elif int(data['bed_cool_to']) < BED_TEMP_MIN:
+                self._plugin_manager.send_plugin_message(self._identifier,
+                    dict(action="errorPopUp",
+                         title="Invalid bed temp value",
+                         message="Bed temperature set to {} which is too low. Changing to {}".format(
+                                data['bed_cool_to'], BED_TEMP_MIN)
+                        ))
+                data['bed_cool_to'] = str(BED_TEMP_MIN)
+                valid = False
+
+        return valid
+
+
+    def on_settings_save(self, data):
+        self.verify_settings(data)
+        octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
+
     def on_settings_load(self):
         data = octoprint.plugin.SettingsPlugin.on_settings_load(self)
         # inject current time into response so we can see if there is timeskew
         data['current'] = datetime.now().ctime()
         data['timezone'] = tzname[0]
+        # below we are maxing duration to 3.5 seconds to avoid printer resets
+        # due to long beeps. I'm casting back to string at the end to keep the
+        # original schema
+        data['duration'] = str(min(int(data['duration']), BEEP_TIME_MAX))
         return data
 
     def get_template_vars(self):
@@ -162,6 +246,7 @@ class FriendlybeeperPlugin(octoprint.plugin.StartupPlugin,
     def on_api_command(self, command, data):
         self._logger.info('API command: {}'.format(command))
         if command == "beep_test":
+            self.verify_settings(data)
             if self.has_cooled_down():
                 self.do_beep("beep_test", data)
         else:
